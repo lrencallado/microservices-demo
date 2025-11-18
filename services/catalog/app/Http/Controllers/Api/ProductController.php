@@ -24,6 +24,9 @@ class ProductController extends Controller
      */
     public function show(Product $product): JsonResponse
     {
-        return response()->json($product);
+        return response()->json([
+            'success' => true,
+            'data' => $product
+        ]);
     }
 }
