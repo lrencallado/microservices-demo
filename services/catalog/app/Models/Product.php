@@ -10,11 +10,11 @@ class Product extends Model
         'name',
         'description',
         'price',
-        'stocks',
+        'stock',
         'image_url',
     ];
 
     protected $casts = [
-        'price' => 'decimal',
+        'price' => 'decimal:2',
     ];
 }
