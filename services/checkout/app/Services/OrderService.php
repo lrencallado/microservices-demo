@@ -98,7 +98,7 @@ class OrderService
             'total' => $order->total,
             'items' => $order->items->map(function ($item) {
                 return [
-                    'product_name' => $item->product_name,
+                    'name' => $item->product_name,
                     'quantity' => $item->quantity,
                     'price' => $item->price,
                 ];
