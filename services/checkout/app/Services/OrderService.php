@@ -93,7 +93,7 @@ class OrderService
     private function publishOrderCreatedEvent(Order $order): void
     {
         $orderData = [
-            'order_id' => $order->id,
+            'id' => $order->id,
             'email' => $order->email,
             'total' => $order->total,
             'items' => $order->items->map(function ($item) {
