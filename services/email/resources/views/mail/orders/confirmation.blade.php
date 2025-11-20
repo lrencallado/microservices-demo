@@ -5,13 +5,13 @@ Hello,
 
 Thank you for shopping with Cinch E-Commerce! Your order has been successfully placed.
 
-<x-panel>
+<x-mail::panel>
 ## Order ID: #{{ $order['id'] }}
 
 ## Order Date: #{{ $order['created_at'] }}
 
 ## Email: #{{ $order['email'] }}
-</x-panel>
+</x-mail::panel>
 
 ## Items:
 <x-mail::table>
