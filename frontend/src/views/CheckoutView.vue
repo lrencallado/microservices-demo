@@ -92,7 +92,7 @@ const handleCheckout = async () => {
       throw new Error(errorMessage)
     }
 
-    toast.success(`Order #${data.data.id} has been confirmed. Check your email for details`)
+    toast.success(`Order #${data.data?.id} has been confirmed. Check your email for details`)
 
     // Clear cart and form
     cartStore.clearCart()

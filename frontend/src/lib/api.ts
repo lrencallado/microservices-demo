@@ -107,6 +107,3 @@ export const api = {
     },
   },
 }
-
-// Export types for use in components
-export type { ApiResponse, ApiError }

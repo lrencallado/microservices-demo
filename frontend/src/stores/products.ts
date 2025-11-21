@@ -1,18 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { toast } from 'vue-sonner'
-import { api } from '../lib/api'
-
-export interface Product {
-  id: number
-  name: string
-  description: string
-  price: string
-  stock: number
-  image_url: string | null
-  created_at: string
-  updated_at: string
-}
+import { type Product, ApiError, api } from '../lib/api'
 
 export const useProductsStore = defineStore('products', () => {
   const products = ref<Product[]>([])
@@ -35,18 +24,22 @@ export const useProductsStore = defineStore('products', () => {
     error.value = null
 
     try {
-      const data = await api.catalog.getProducts()
+      const response = await api.catalog.getProducts()
 
-      if (data.success) {
-        products.value = data.data
+      if (response.success && response.data) {
+        products.value = response.data
       } else {
-        toast.error(data.message || 'Failed to fetch products')
-        throw new Error(data.message || 'Failed to fetch products')
+        toast.error(response.message || 'Failed to fetch products')
+        throw new Error(response.message || 'Failed to fetch products')
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'An error occurred'
-      toast.error(error.value)
-      console.error('Failed to fetch products:', err)
+      if (err instanceof ApiError) {
+        error.value = err.message
+      } else if (err instanceof Error) {
+        error.value = err.message
+      } else {
+        error.value = 'An unknown error occurred'
+      }
       throw err
     } finally {
       loading.value = false

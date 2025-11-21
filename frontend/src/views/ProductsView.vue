@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
-import { Product, useProductsStore } from '@/stores/products'
+import { useProductsStore } from '@/stores/products'
+import type { Product } from '@/lib/api'
 import {
   Card,
   CardContent,
@@ -31,16 +32,18 @@ const addToCart = (product: Product) => {
     toast.success('Added to cart', {
       description: `1 × ${product.name} added to your cart.`,
     })
-  } catch (error) {
-    toast.error(error.messag)
+  } catch (error: any) {
+    toast.error(error.message)
   }
 }
 
 const isInStock = (stock: number) => stock > 0
 
-const getStockBadgeVariant = (stock: number) => {
+const getStockBadgeVariant = (
+  stock: number,
+): 'default' | 'destructive' | 'outline' | 'secondary' => {
   if (stock === 0) return 'destructive'
-  if (stock < 10) return 'warning'
+  if (stock < 10) return 'destructive'
   return 'default'
 }
 
@@ -95,7 +98,7 @@ onMounted(async () => {
       <Package class="mx-auto h-12 w-12 text-muted-foreground mb-4" />
       <h3 class="text-lg font-semibold mb-2">Failed to load products</h3>
       <p class="text-muted-foreground mb-4">{{ error }}</p>
-      <Button @click="productStore.fetchProducts">Try Again</Button>
+      <Button @click="productsStore.fetchProducts">Try Again</Button>
     </div>
 
     <!-- Products Grid -->

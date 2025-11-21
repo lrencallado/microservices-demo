@@ -114,13 +114,18 @@ const removeFromCart = () => {
   })
 }
 
-const getStockStatus = () => {
+interface StockStatus {
+  text: string
+  variant: 'default' | 'destructive' | 'outline' | 'secondary'
+}
+
+const getStockStatus = (): StockStatus => {
   if (!product.value) return { text: 'Unknown', variant: 'secondary' }
 
   const stock = product.value.stock
 
   if (stock === 0) return { text: 'Out of Stock', variant: 'destructive' }
-  if (stock < 10) return { text: `Only ${stock} left!`, variant: 'warning' }
+  if (stock < 10) return { text: `Only ${stock} left!`, variant: 'destructive' }
   return { text: 'In Stock', variant: 'default' }
 }
 
