@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'vue-sonner'
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, CreditCard } from 'lucide-vue-next'
+import { api } from '@/lib/api'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -81,17 +82,9 @@ const handleCheckout = async () => {
       email: customerEmail.value,
     }
 
-    const response = await fetch('http://localhost/api/checkout/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(checkoutPayload),
-    })
+    const data = await api.checkout.createOrder(checkoutPayload)
 
-    const data = await response.json()
-
-    if (!response.ok || !data.success) {
+    if (!data.success) {
       const errorMessage = data.message || 'Failed to place order'
       toast.error('Error', {
         description: errorMessage,
@@ -99,8 +92,9 @@ const handleCheckout = async () => {
       throw new Error(errorMessage)
     }
 
-    // Success
-    toast.success(`Order #${data.data.id} has been confirmed. Check your email for details`)
+    const { order } = data.data
+
+    toast.success(`Order #${order.id} has been confirmed. Check your email for details`)
 
     // Clear cart and form
     cartStore.clearCart()

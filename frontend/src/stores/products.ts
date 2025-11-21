@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { toast } from 'vue-sonner'
+import { api } from '../lib/api'
 
 export interface Product {
   id: number
@@ -34,8 +35,7 @@ export const useProductsStore = defineStore('products', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost/api/catalog/products')
-      const data = await response.json()
+      const data = await api.catalog.getProducts()
 
       if (data.success) {
         products.value = data.data
@@ -58,8 +58,7 @@ export const useProductsStore = defineStore('products', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost/api/catalog/products/${id}`)
-      const data = await response.json()
+      const data = await api.catalog.getProduct(id)
 
       if (data.success) {
         return data.data

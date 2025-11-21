@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import type { Product } from './product'
+import type { Product } from '@/lib/api'
 
 export interface CartItem {
   product: Product
@@ -18,7 +18,7 @@ export const useCartStore = defineStore('cart', () => {
       try {
         items.value = JSON.parse(savedCart)
       } catch (error) {
-        console.error('Failed to load cart from localStorage:', error)
+        console.error('Failed to load cart: ', error)
         items.value = []
       }
     }
