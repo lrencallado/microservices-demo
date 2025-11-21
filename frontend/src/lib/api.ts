@@ -95,7 +95,7 @@ export const api = {
     /**
      * Create a new order
      */
-    async createOrder(orderData: CreateOrderRequest): Promise<ApiResponse<{ order: Order }>> {
+    async createOrder(orderData: CreateOrderRequest): Promise<ApiResponse<Order>> {
       const response = await fetch(`${API_BASE_URL}/checkout/orders`, {
         method: 'POST',
         headers: {
