@@ -1,0 +1,198 @@
+version: '3.8'
+
+services:
+  # Nginx API Gateway
+  nginx-gateway:
+    build:
+      context: ./services/nginx-gateway
+      dockerfile: Dockerfile
+    container_name: cinch-nginx-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - catalog
+      - checkout
+    networks:
+      - cinch-network
+    restart: unless-stopped
+
+  # Frontend (Vue.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cinch-frontend
+    networks:
+      - cinch-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Catalog Service
+  catalog:
+    build:
+      context: ./services/catalog
+      dockerfile: Dockerfile
+    container_name: cinch-catalog
+    environment:
+      - APP_NAME=CatalogService
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_HOST=mysql-catalog
+      - DB_PORT=3306
+      - DB_DATABASE=catalog_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+    depends_on:
+      - mysql-catalog
+    networks:
+      - cinch-network
+    restart: unless-stopped
+
+  # Checkout Service
+  checkout:
+    build:
+      context: ./services/checkout
+      dockerfile: Dockerfile
+    container_name: cinch-checkout
+    environment:
+      - APP_NAME=CheckoutService
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_HOST=mysql-checkout
+      - DB_PORT=3306
+      - DB_DATABASE=checkout_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+      - REDIS_CLIENT=predis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CATALOG_SERVICE_BASE_URL=http://catalog:3001
+    depends_on:
+      - mysql-checkout
+      - redis
+      - catalog
+    networks:
+      - cinch-network
+    restart: unless-stopped
+
+  # Email Service (Queue Worker)
+  email:
+    build:
+      context: ./services/email
+      dockerfile: Dockerfile
+    container_name: cinch-email
+    command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+    environment:
+      - APP_NAME=EmailService
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_HOST=mysql-email
+      - DB_PORT=3306
+      - DB_DATABASE=email_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+      - REDIS_CLIENT=predis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PREFIX=checkoutservice-database-
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=sandbox.smtp.mailtrap.io
+      - MAIL_PORT=2525
+      - MAIL_USERNAME=${MAILTRAP_USERNAME}
+      - MAIL_PASSWORD=${MAILTRAP_PASSWORD}
+      - MAIL_ENCRYPTION=tls
+      - MAIL_FROM_ADDRESS=noreply@cinch-ecommerce.com
+      - MAIL_FROM_NAME=Cinch E-Commerce
+    depends_on:
+      - mysql-email
+      - redis
+    networks:
+      - cinch-network
+    restart: unless-stopped
+
+  # MySQL for Catalog Service
+  mysql-catalog:
+    image: mysql:8.0
+    container_name: cinch-mysql-catalog
+    environment:
+      - MYSQL_DATABASE=catalog_db
+      - MYSQL_ROOT_PASSWORD=secret
+    volumes:
+      - mysql-catalog-data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - cinch-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # MySQL for Checkout Service
+  mysql-checkout:
+    image: mysql:8.0
+    container_name: cinch-mysql-checkout
+    environment:
+      - MYSQL_DATABASE=checkout_db
+      - MYSQL_ROOT_PASSWORD=secret
+    volumes:
+      - mysql-checkout-data:/var/lib/mysql
+    ports:
+      - "3308:3306"
+    networks:
+      - cinch-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # MySQL for Email Service
+  mysql-email:
+    image: mysql:8.0
+    container_name: cinch-mysql-email
+    environment:
+      - MYSQL_DATABASE=email_db
+      - MYSQL_ROOT_PASSWORD=secret
+    volumes:
+      - mysql-email-data:/var/lib/mysql
+    ports:
+      - "3309:3306"
+    networks:
+      - cinch-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis for Queue
+  redis:
+    image: redis:7-alpine
+    container_name: cinch-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - cinch-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 3s
+      retries: 10
+
+networks:
+  cinch-network:
+    driver: bridge
+
+volumes:
+  mysql-catalog-data:
+  mysql-checkout-data:
+  mysql-email-data:
+  redis-data:
