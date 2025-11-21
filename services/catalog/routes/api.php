@@ -10,5 +10,7 @@ Route::get('/user', function (Request $request) {
 
 Route::controller(ProductController::class)->prefix('products')->group(function () {
     Route::get('/', 'index');
-    Route::get('/{product}', 'show');
+    Route::get('/{id}', 'show');
+    Route::post('/{id}/decrement-stock', 'decrementStock');
+    Route::post('/{id}/increment-stock', 'incrementStock');
 });

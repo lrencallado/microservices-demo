@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 class OrderService
@@ -30,13 +31,33 @@ class OrderService
             $order = Order::create([
                 'email' => $data['email'],
                 'total' => $total,
-                'status' => 'completed',
+                'status' => 'pending',
             ]);
 
-            // Create order items
+            $decrementedProducts = []; // Track successful decrements
+
             foreach ($validatedItems as $item) {
                 $order->items()->create($item);
+
+                try {
+                    $this->catalogService->decrementStock($item['product_id'], $item['quantity']);
+                    $decrementedProducts[] = $item; // Track success
+                } catch (\Throwable $th) {
+                    // Compensate: revert already decremented stock
+                    foreach ($decrementedProducts as $decremented) {
+                        try {
+                            $this->catalogService->incrementStock($decremented['product_id'], $decremented['quantity']);
+                        } catch (\Throwable $th) {
+                            // Log compensation failure but continue reverting others
+                            Log::error("Failed to compensate stock for product {$decremented['product_id']} with quantity {$decremented['quantity']}: " . $th->getMessage());
+                        }
+                    }
+                    throw $th;
+                }
             }
+
+            // Mark order as completed
+            $order->update(['status' => 'completed']);
 
             // Publish event to Redis
             $this->publishOrderCreatedEvent($order);

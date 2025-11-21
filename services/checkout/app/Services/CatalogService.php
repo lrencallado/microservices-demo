@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 
 class CatalogService
@@ -54,5 +55,49 @@ class CatalogService
         }
 
         return $product;
+    }
+
+    /**
+     * Decrement stock
+     *
+     * @param integer $productId
+     * @param integer $quantity
+     */
+    public function decrementStock(int $productId, int $quantity)
+    {
+        try {
+            $response = Http::post("{$this->baseUrl}/api/products/{$productId}/decrement-stock", [
+                'quantity' => $quantity
+            ]);
+            if (!$response->successful()) {
+                $error = $response->json();
+                throw new Exception($error['message'] ?? "Failed to decrement stock for product {$productId}");
+            }
+            return $response->json('data');
+        } catch (\Throwable $th) {
+            throw new Exception("Failed to decrement stock for product {$productId}: {$th->getMessage()}");
+        }
+    }
+
+    /**
+     * Increment stock
+     *
+     * @param integer $productId
+     * @param integer $quantity
+     */
+    public function incrementStock(int $productId, int $quantity)
+    {
+        try {
+            $response = Http::post("{$this->baseUrl}/api/products/{$productId}/increment-stock", [
+                'quantity' => $quantity
+            ]);
+            if (!$response->successful()) {
+                $error = $response->json();
+                throw new Exception($error['message'] ?? "Failed to increment stock for product {$productId}");
+            }
+            return $response->json('data');
+        } catch (\Throwable $th) {
+            throw new Exception("Failed to increment stock for product {$productId}: {$th->getMessage()}");
+        }
     }
 }
