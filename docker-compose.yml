@@ -99,11 +99,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PREFIX=checkoutservice-database-
-      - MAIL_MAILER=smtp
-      - MAIL_HOST=sandbox.smtp.mailtrap.io
-      - MAIL_PORT=2525
-      - MAIL_USERNAME=${MAILTRAP_USERNAME}
-      - MAIL_PASSWORD=${MAILTRAP_PASSWORD}
+      - MAIL_MAILER=${MAIL_MAILER}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
       - MAIL_ENCRYPTION=tls
       - MAIL_FROM_ADDRESS=noreply@cinch-ecommerce.com
       - MAIL_FROM_NAME=Cinch E-Commerce
