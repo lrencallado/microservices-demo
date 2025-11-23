@@ -4,6 +4,18 @@
         "ParameterValue":  "cinch"
     },
     {
+        "ParameterKey": "CatalogAppKey",
+        "ParameterValue": "base64:CHANGE_ME"
+    },
+    {
+        "ParameterKey": "CheckoutAppKey",
+        "ParameterValue": "base64:CHANGE_ME"
+    },
+    {
+        "ParameterKey": "EmailAppKey",
+        "ParameterValue": "base64:CHANGE_ME"
+    },
+    {
         "ParameterKey":  "DBPassword",
         "ParameterValue":  "YourPassword"
     },

@@ -6,6 +6,21 @@ Parameters:
     Description: Environment name prefix
     Type: String
     Default: cinch
+  
+  CatalogAppKey:
+    Description: Laravel APP_KEY for Catalog service
+    Type: String
+    NoEcho: true
+
+  CheckoutAppKey:
+    Description: Laravel APP_KEY for Checkout service
+    Type: String
+    NoEcho: true
+
+  EmailAppKey:
+    Description: Laravel APP_KEY for Email service
+    Type: String
+    NoEcho: true
 
   DBPassword:
     Description: Database master password (must be at least 8 characters)
@@ -54,14 +69,6 @@ Parameters:
     Description: SMTP password
     Type: String
     NoEcho: true
-
-  CertificateArn:
-    Description: ACM Certificate ARN for HTTPS (leave empty for HTTP only)
-    Type: String
-    Default: ''
-
-Conditions:
-  HasCertificate: !Not [!Equals [!Ref CertificateArn, '']]
 
 Resources:
   # ===== VPC and Networking =====
@@ -210,10 +217,6 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
@@ -576,26 +579,6 @@ Resources:
       Port: 80
       Protocol: HTTP
       DefaultActions:
-        - !If
-          - HasCertificate
-          - Type: redirect
-            RedirectConfig:
-              Protocol: HTTPS
-              Port: 443
-              StatusCode: HTTP_301
-          - Type: forward
-            TargetGroupArn: !Ref FrontendTargetGroup
-
-  HTTPSListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Condition: HasCertificate
-    Properties:
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: 443
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn: !Ref CertificateArn
-      DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref FrontendTargetGroup
 
@@ -603,7 +586,7 @@ Resources:
   CatalogListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
-      ListenerArn: !If [HasCertificate, !Ref HTTPSListener, !Ref HTTPListener]
+      ListenerArn: !Ref HTTPListener
       Priority: 10
       Conditions:
         - Field: path-pattern
@@ -616,7 +599,7 @@ Resources:
   CheckoutListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
-      ListenerArn: !If [HasCertificate, !Ref HTTPSListener, !Ref HTTPListener]
+      ListenerArn: !Ref HTTPListener
       Priority: 20
       Conditions:
         - Field: path-pattern
@@ -646,6 +629,8 @@ Resources:
           Environment:
             - Name: APP_NAME
               Value: CatalogService
+            - Name: APP_KEY
+              Value: !Ref CatalogAppKey
             - Name: APP_ENV
               Value: production
             - Name: APP_DEBUG
@@ -687,6 +672,8 @@ Resources:
           Environment:
             - Name: APP_NAME
               Value: CheckoutService
+            - Name: APP_KEY
+              Value: !Ref CheckoutAppKey
             - Name: APP_ENV
               Value: production
             - Name: APP_DEBUG
@@ -739,6 +726,8 @@ Resources:
           Environment:
             - Name: APP_NAME
               Value: EmailService
+            - Name: APP_KEY
+              Value: !Ref EmailAppKey
             - Name: APP_ENV
               Value: production
             - Name: APP_DEBUG
@@ -906,10 +895,7 @@ Outputs:
 
   LoadBalancerURL:
     Description: Application URL
-    Value: !Sub
-      - '${Protocol}://${DNS}'
-      - Protocol: !If [HasCertificate, 'https', 'http']
-        DNS: !GetAtt ApplicationLoadBalancer.DNSName
+    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}'
 
   CatalogDatabaseEndpoint:
     Description: Catalog Database Endpoint
