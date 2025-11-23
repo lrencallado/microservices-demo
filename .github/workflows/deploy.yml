@@ -1,0 +1,174 @@
+name: CD - Deploy to AWS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  ECS_CLUSTER: cinch-cluster
+
+jobs:
+  deploy:
+    name: Build and Deploy to AWS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build and push Catalog service
+      - name: Build and Push Catalog Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/catalog
+          file: ./services/catalog/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/cinch/catalog:latest
+            ${{ env.ECR_REGISTRY }}/cinch/catalog:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push Checkout service
+      - name: Build and Push Checkout Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/checkout
+          file: ./services/checkout/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/cinch/checkout:latest
+            ${{ env.ECR_REGISTRY }}/cinch/checkout:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push Email service
+      - name: Build and Push Email Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/email
+          file: ./services/email/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/cinch/email:latest
+            ${{ env.ECR_REGISTRY }}/cinch/email:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push Frontend
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/cinch/frontend:latest
+            ${{ env.ECR_REGISTRY }}/cinch/frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Force new deployment for Catalog service
+      - name: Deploy Catalog Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service catalog-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      # Force new deployment for Checkout service
+      - name: Deploy Checkout Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service checkout-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      # Force new deployment for Email service
+      - name: Deploy Email Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service email-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      # Force new deployment for Frontend
+      - name: Deploy Frontend
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service frontend-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      # Wait for services to stabilize
+      - name: Wait for Catalog Service
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services catalog-service \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for Checkout Service
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services checkout-service \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for Email Service
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services email-service \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for Frontend Service
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services frontend-service \
+            --region ${{ env.AWS_REGION }}
+
+      # Get deployment status
+      - name: Get Deployment Status
+        run: |
+          echo "=== Deployment Summary ==="
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services catalog-service checkout-service email-service frontend-service \
+            --region ${{ env.AWS_REGION }} \
+            --query 'services[*].[serviceName,status,runningCount,desiredCount]' \
+            --output table
+
+      # Get Load Balancer URL
+      - name: Get Application URL
+        run: |
+          ALB_DNS=$(aws cloudformation describe-stacks \
+            --stack-name cinch-infrastructure \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' \
+            --output text)
+          echo "=== Application URL ==="
+          echo "http://$ALB_DNS"
+          echo "Application deployed successfully to: http://$ALB_DNS"
