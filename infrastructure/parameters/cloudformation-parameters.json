@@ -1,0 +1,50 @@
+[
+    {
+        "ParameterKey":  "EnvironmentName",
+        "ParameterValue":  "cinch"
+    },
+    {
+        "ParameterKey":  "DBPassword",
+        "ParameterValue":  "YourPassword"
+    },
+    {
+        "ParameterKey":  "RedisPassword",
+        "ParameterValue":  "YourPassword"
+    },
+    {
+        "ParameterKey":  "CatalogImageUri",
+        "ParameterValue":  "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/cinch/catalog:latest"
+    },
+    {
+        "ParameterKey":  "CheckoutImageUri",
+        "ParameterValue":  "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/cinch/checkout:latest"
+    },
+    {
+        "ParameterKey":  "EmailImageUri",
+        "ParameterValue":  "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/cinch/email:latest"
+    },
+    {
+        "ParameterKey":  "FrontendImageUri",
+        "ParameterValue":  "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/cinch/frontend:latest"
+    },
+    {
+        "ParameterKey":  "SMTPHost",
+        "ParameterValue":  "sandbox.smtp.mailtrap.io"
+    },
+    {
+        "ParameterKey":  "SMTPPort",
+        "ParameterValue":  "587"
+    },
+    {
+        "ParameterKey":  "SMTPUsername",
+        "ParameterValue":  "YourSMTPUsername"
+    },
+    {
+        "ParameterKey":  "SMTPPassword",
+        "ParameterValue":  "YourSMTPPassword"
+    },
+    {
+        "ParameterKey":  "CertificateArn",
+        "ParameterValue":  ""
+    }
+]
