@@ -3,6 +3,4 @@
 use App\Http\Controllers\Api\OrderController;
 use Illuminate\Support\Facades\Route;
 
-Route::controller(OrderController::class)->prefix('orders')->group(function () {
-    Route::post('/', 'store');
-});
+Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:10,1');
