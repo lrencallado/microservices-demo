@@ -897,6 +897,10 @@ Resources:
                     proxy_set_header X-Real-IP $remote_addr;
                     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                     proxy_set_header X-Forwarded-Proto $scheme;
+                    sub_filter 'href="/' 'href="/mailhog/';
+                    sub_filter 'src="/' 'src="/mailhog/';
+                    sub_filter_once off;
+                    sub_filter_types text/html text/css text/javascript application/javascript;
                   }
                 }
               }
