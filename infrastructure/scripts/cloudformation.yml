@@ -636,19 +636,6 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref CheckoutTargetGroup
 
-  MailhogListenerRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      ListenerArn: !Ref HTTPListener
-      Priority: 30
-      Conditions:
-        - Field: path-pattern
-          Values:
-            - '/mailhog*'
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref MailhogTargetGroup
-
   # ===== ECS Task Definitions =====
   CatalogTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -1001,7 +988,6 @@ Resources:
 
   MailhogService:
     Type: AWS::ECS::Service
-    DependsOn: MailhogListenerRule
     Properties:
       ServiceName: mailhog-service
       Cluster: !Ref ECSCluster
