@@ -426,26 +426,6 @@ Resources:
         - Name: containerInsights
           Value: enabled
 
-  # ===== Service Discovery =====
-  ServiceDiscoveryNamespace:
-    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
-    Properties:
-      Name: cinch.local
-      Vpc: !Ref VPC
-      Description: Private DNS namespace for service discovery
-
-  MailhogServiceDiscovery:
-    Type: AWS::ServiceDiscovery::Service
-    Properties:
-      Name: mailhog
-      DnsConfig:
-        DnsRecords:
-          - Type: A
-            TTL: 60
-        NamespaceId: !Ref ServiceDiscoveryNamespace
-      HealthCheckCustomConfig:
-        FailureThreshold: 1
-
   # ===== CloudWatch Log Groups =====
   CatalogLogGroup:
     Type: AWS::Logs::LogGroup
@@ -469,12 +449,6 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /ecs/${EnvironmentName}/frontend
-      RetentionInDays: 7
-
-  MailhogLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /ecs/${EnvironmentName}/mailhog
       RetentionInDays: 7
 
   # ===== IAM Roles =====
@@ -584,20 +558,6 @@ Resources:
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 3
 
-  MailhogTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub ${EnvironmentName}-mailhog-tg
-      Port: 8080
-      Protocol: HTTP
-      VpcId: !Ref VPC
-      TargetType: ip
-      HealthCheckPath: /mailhog
-      HealthCheckIntervalSeconds: 30
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 3
-
   # ===== ALB Listeners =====
   HTTPListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -635,19 +595,6 @@ Resources:
       Actions:
         - Type: forward
           TargetGroupArn: !Ref CheckoutTargetGroup
-
-  MailhogListenerRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      ListenerArn: !Ref HTTPListener
-      Priority: 30
-      Conditions:
-        - Field: path-pattern
-          Values:
-            - '/mailhog*'
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref MailhogTargetGroup
 
   # ===== ECS Task Definitions =====
   CatalogTaskDefinition:
@@ -805,14 +752,6 @@ Resources:
               Value: noreply@cinch-ecommerce.com
             - Name: MAIL_FROM_NAME
               Value: 'Cinch E-Commerce'
-            - Name: MAIL_MAILER
-              Value: smtp
-            - Name: MAIL_HOST
-              Value: mailhog.cinch.local
-            - Name: MAIL_PORT
-              Value: '1025'
-            - Name: MAIL_ENCRYPTION
-              Value: 'null'
           Secrets:
             - Name: DB_PASSWORD
               ValueFrom: !Sub '${EmailDBSecret}:password::'
@@ -847,67 +786,6 @@ Resources:
               awslogs-group: !Ref FrontendLogGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
-
-  MailhogTaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: !Sub ${EnvironmentName}-mailhog
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Cpu: '512'
-      Memory: '1024'
-      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
-      ContainerDefinitions:
-        - Name: mailhog
-          Image: mailhog/mailhog:latest
-          PortMappings:
-            - ContainerPort: 8025
-              Protocol: tcp
-            - ContainerPort: 1025
-              Protocol: tcp
-          Essential: true
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref MailhogLogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: mailhog
-        - Name: nginx
-          Image: nginx:alpine
-          PortMappings:
-            - ContainerPort: 8080
-              Protocol: tcp
-          Essential: true
-          Command:
-            - /bin/sh
-            - -c
-            - |
-              cat > /etc/nginx/nginx.conf <<'EOF'
-              events { worker_connections 1024; }
-              http {
-                server {
-                  listen 8080;
-                  location /mailhog {
-                    rewrite ^/mailhog/(.*) /$1 break;
-                    rewrite ^/mailhog$ / break;
-                    proxy_pass http://127.0.0.1:8025;
-                    proxy_http_version 1.1;
-                    proxy_set_header Host $host;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                  }
-                }
-              }
-              EOF
-              nginx -g 'daemon off;'
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref MailhogLogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: nginx
 
   # ===== ECS Services =====
   CatalogService:
@@ -997,31 +875,6 @@ Resources:
         - ContainerName: frontend
           ContainerPort: 80
           TargetGroupArn: !Ref FrontendTargetGroup
-      HealthCheckGracePeriodSeconds: 60
-
-  MailhogService:
-    Type: AWS::ECS::Service
-    DependsOn: MailhogListenerRule
-    Properties:
-      ServiceName: mailhog-service
-      Cluster: !Ref ECSCluster
-      TaskDefinition: !Ref MailhogTaskDefinition
-      DesiredCount: 1
-      LaunchType: FARGATE
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          Subnets:
-            - !Ref PrivateSubnet1
-            - !Ref PrivateSubnet2
-          SecurityGroups:
-            - !Ref ECSSecurityGroup
-      LoadBalancers:
-        - ContainerName: nginx
-          ContainerPort: 8080
-          TargetGroupArn: !Ref MailhogTargetGroup
-      ServiceRegistries:
-        - RegistryArn: !GetAtt MailhogServiceDiscovery.Arn
       HealthCheckGracePeriodSeconds: 60
 
 Outputs:
