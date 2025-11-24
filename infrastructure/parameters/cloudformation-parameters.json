@@ -38,21 +38,5 @@
     {
         "ParameterKey":  "FrontendImageUri",
         "ParameterValue":  "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/cinch/frontend:latest"
-    },
-    {
-        "ParameterKey":  "SMTPHost",
-        "ParameterValue":  "sandbox.smtp.mailtrap.io"
-    },
-    {
-        "ParameterKey":  "SMTPPort",
-        "ParameterValue":  "587"
-    },
-    {
-        "ParameterKey":  "SMTPUsername",
-        "ParameterValue":  "YourSMTPUsername"
-    },
-    {
-        "ParameterKey":  "SMTPPassword",
-        "ParameterValue":  "YourSMTPPassword"
     }
 ]

@@ -80,14 +80,6 @@ jobs:
                  .ParameterValue = "${{ secrets.DB_PASSWORD }}"
                elif .ParameterKey == "RedisPassword" then
                  .ParameterValue = "${{ secrets.REDIS_PASSWORD }}"
-               elif .ParameterKey == "SMTPHost" then
-                 .ParameterValue = "${{ secrets.SMTP_HOST }}"
-               elif .ParameterKey == "SMTPPort" then
-                 .ParameterValue = "${{ secrets.SMTP_PORT }}"
-               elif .ParameterKey == "SMTPUsername" then
-                 .ParameterValue = "${{ secrets.SMTP_USERNAME }}"
-               elif .ParameterKey == "SMTPPassword" then
-                 .ParameterValue = "${{ secrets.SMTP_PASSWORD }}"
                else
                  .
                end
