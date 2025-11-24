@@ -2,8 +2,8 @@ name: CD - Deploy to AWS
 
 on:
   # Disabled until infrastructure is created
-  # push:
-  #   branches: [ main ]
+  push:
+    branches: [ main ]
   workflow_dispatch:  # Allow manual trigger
 
 env:
