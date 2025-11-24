@@ -25,7 +25,7 @@ class CatalogService
     public function getProduct(int $productId): array
     {
         try {
-            $response = Http::get("{$this->baseUrl}/api/products/{$productId}");
+            $response = Http::get("{$this->baseUrl}/api/catalog/products/{$productId}");
             if (!$response->successful()) {
                 throw new Exception("Product not found: {$productId}", 404);
             }
@@ -66,7 +66,7 @@ class CatalogService
     public function decrementStock(int $productId, int $quantity)
     {
         try {
-            $response = Http::post("{$this->baseUrl}/api/products/{$productId}/decrement-stock", [
+            $response = Http::post("{$this->baseUrl}/api/catalog/products/{$productId}/decrement-stock", [
                 'quantity' => $quantity
             ]);
             if (!$response->successful()) {
@@ -88,7 +88,7 @@ class CatalogService
     public function incrementStock(int $productId, int $quantity)
     {
         try {
-            $response = Http::post("{$this->baseUrl}/api/products/{$productId}/increment-stock", [
+            $response = Http::post("{$this->baseUrl}/api/catalog/products/{$productId}/increment-stock", [
                 'quantity' => $quantity
             ]);
             if (!$response->successful()) {
