@@ -588,11 +588,11 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: !Sub ${EnvironmentName}-mailhog-tg
-      Port: 8025
+      Port: 8080
       Protocol: HTTP
       VpcId: !Ref VPC
       TargetType: ip
-      HealthCheckPath: /
+      HealthCheckPath: /mailhog
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
@@ -855,8 +855,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '256'
-      Memory: '512'
+      Cpu: '512'
+      Memory: '1024'
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
       ContainerDefinitions:
         - Name: mailhog
@@ -866,12 +866,48 @@ Resources:
               Protocol: tcp
             - ContainerPort: 1025
               Protocol: tcp
+          Essential: true
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group: !Ref MailhogLogGroup
               awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: ecs
+              awslogs-stream-prefix: mailhog
+        - Name: nginx
+          Image: nginx:alpine
+          PortMappings:
+            - ContainerPort: 8080
+              Protocol: tcp
+          Essential: true
+          Command:
+            - /bin/sh
+            - -c
+            - |
+              cat > /etc/nginx/nginx.conf <<'EOF'
+              events { worker_connections 1024; }
+              http {
+                server {
+                  listen 8080;
+                  location /mailhog {
+                    rewrite ^/mailhog/(.*) /$1 break;
+                    rewrite ^/mailhog$ / break;
+                    proxy_pass http://127.0.0.1:8025;
+                    proxy_http_version 1.1;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                  }
+                }
+              }
+              EOF
+              nginx -g 'daemon off;'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref MailhogLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: nginx
 
   # ===== ECS Services =====
   CatalogService:
@@ -981,8 +1017,8 @@ Resources:
           SecurityGroups:
             - !Ref ECSSecurityGroup
       LoadBalancers:
-        - ContainerName: mailhog
-          ContainerPort: 8025
+        - ContainerName: nginx
+          ContainerPort: 8080
           TargetGroupArn: !Ref MailhogTargetGroup
       ServiceRegistries:
         - RegistryArn: !GetAtt MailhogServiceDiscovery.Arn
