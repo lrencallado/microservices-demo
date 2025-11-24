@@ -153,7 +153,7 @@ return [
         ],
 
         'default' => [
-            'scheme' => env('REDIS_SCHEME', 'tcp'),
+            'scheme' => env('REDIS_SCHEME', 'tls'),
             'url' => env('REDIS_URL'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'username' => env('REDIS_USERNAME'),
