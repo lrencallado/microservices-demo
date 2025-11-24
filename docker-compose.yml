@@ -99,17 +99,16 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PREFIX=checkoutservice-database-
-      - MAIL_MAILER=${MAIL_MAILER}
-      - MAIL_HOST=${MAIL_HOST}
-      - MAIL_PORT=${MAIL_PORT}
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - MAIL_ENCRYPTION=tls
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=mailhog
+      - MAIL_PORT=1025
+      - MAIL_ENCRYPTION=null
       - MAIL_FROM_ADDRESS=noreply@cinch-ecommerce.com
       - MAIL_FROM_NAME=Cinch E-Commerce
     depends_on:
       - mysql-email
       - redis
+      - mailhog
     networks:
       - cinch-network
     restart: unless-stopped
@@ -186,6 +185,17 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       timeout: 3s
       retries: 10
+
+  # Mailhog for Email Testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: cinch-mailhog
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    networks:
+      - cinch-network
+    restart: unless-stopped
 
 networks:
   cinch-network:
