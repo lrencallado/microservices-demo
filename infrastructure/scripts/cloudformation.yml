@@ -986,8 +986,6 @@ Resources:
           TargetGroupArn: !Ref MailhogTargetGroup
       ServiceRegistries:
         - RegistryArn: !GetAtt MailhogServiceDiscovery.Arn
-          ContainerName: mailhog
-          ContainerPort: 1025
       HealthCheckGracePeriodSeconds: 60
 
 Outputs:
