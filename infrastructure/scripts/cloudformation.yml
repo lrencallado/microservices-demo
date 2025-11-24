@@ -658,6 +658,8 @@ Resources:
               Value: production
             - Name: APP_DEBUG
               Value: 'false'
+            - Name: DB_CONNECTION
+              Value: mysql
             - Name: DB_HOST
               Value: !GetAtt CatalogDatabase.Endpoint.Address
             - Name: DB_PORT
@@ -702,6 +704,8 @@ Resources:
               Value: production
             - Name: APP_DEBUG
               Value: 'false'
+            - Name: DB_CONNECTION
+              Value: mysql
             - Name: DB_HOST
               Value: !GetAtt CheckoutDatabase.Endpoint.Address
             - Name: DB_PORT
@@ -757,6 +761,8 @@ Resources:
               Value: production
             - Name: APP_DEBUG
               Value: 'false'
+            - Name: DB_CONNECTION
+              Value: mysql
             - Name: DB_HOST
               Value: !GetAtt EmailDatabase.Endpoint.Address
             - Name: DB_PORT
