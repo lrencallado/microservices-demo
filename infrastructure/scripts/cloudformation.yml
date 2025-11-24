@@ -718,6 +718,8 @@ Resources:
               Value: !GetAtt RedisCluster.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: '6379'
+            - Name: REDIS_SCHEME
+              Value: tls
             - Name: REDIS_CLIENT
               Value: predis
             - Name: CATALOG_SERVICE_BASE_URL
@@ -775,6 +777,8 @@ Resources:
               Value: !GetAtt RedisCluster.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: '6379'
+            - Name: REDIS_SCHEME
+              Value: tls
             - Name: REDIS_CLIENT
               Value: predis
             - Name: REDIS_PREFIX
