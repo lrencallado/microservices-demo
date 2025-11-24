@@ -721,7 +721,7 @@ Resources:
             - Name: REDIS_CLIENT
               Value: predis
             - Name: CATALOG_SERVICE_BASE_URL
-              Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}/api/catalog'
+              Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}'
           Secrets:
             - Name: DB_PASSWORD
               ValueFrom: !Sub '${CheckoutDBSecret}:password::'
