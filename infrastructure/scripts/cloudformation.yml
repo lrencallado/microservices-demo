@@ -807,6 +807,7 @@ Resources:
       TaskDefinition: !Ref CatalogTaskDefinition
       DesiredCount: 2
       LaunchType: FARGATE
+      EnableExecuteCommand: true
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
@@ -830,6 +831,7 @@ Resources:
       TaskDefinition: !Ref CheckoutTaskDefinition
       DesiredCount: 2
       LaunchType: FARGATE
+      EnableExecuteCommand: true
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
@@ -852,6 +854,7 @@ Resources:
       TaskDefinition: !Ref EmailTaskDefinition
       DesiredCount: 1
       LaunchType: FARGATE
+      EnableExecuteCommand: true
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
