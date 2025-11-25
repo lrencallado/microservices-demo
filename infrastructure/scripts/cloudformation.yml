@@ -198,6 +198,11 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8025
+          ToPort: 8025
+          CidrIp: 0.0.0.0/0
+          Description: Mailhog web UI
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-alb-sg
@@ -587,12 +592,12 @@ Resources:
   MailhogTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub ${EnvironmentName}-mailhog-tg-v4
-      Port: 8080
+      Name: !Sub ${EnvironmentName}-mailhog-tg-v5
+      Port: 8025
       Protocol: HTTP
       VpcId: !Ref VPC
       TargetType: ip
-      HealthCheckPath: /mailhog
+      HealthCheckPath: /
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
@@ -608,6 +613,16 @@ Resources:
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref FrontendTargetGroup
+
+  MailhogListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 8025
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref MailhogTargetGroup
 
   # ===== ALB Listener Rules =====
   CatalogListenerRule:
@@ -635,19 +650,6 @@ Resources:
       Actions:
         - Type: forward
           TargetGroupArn: !Ref CheckoutTargetGroup
-
-  MailhogListenerRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      ListenerArn: !Ref HTTPListener
-      Priority: 30
-      Conditions:
-        - Field: path-pattern
-          Values:
-            - '/mailhog*'
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref MailhogTargetGroup
 
   # ===== ECS Task Definitions =====
   CatalogTaskDefinition:
@@ -855,8 +857,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '512'
-      Memory: '1024'
+      Cpu: '256'
+      Memory: '512'
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
       ContainerDefinitions:
         - Name: mailhog
@@ -873,61 +875,6 @@ Resources:
               awslogs-group: !Ref MailhogLogGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: mailhog
-        - Name: nginx
-          Image: nginx:alpine
-          PortMappings:
-            - ContainerPort: 8080
-              Protocol: tcp
-          Essential: true
-          Command:
-            - /bin/sh
-            - -c
-            - |
-              cat > /etc/nginx/nginx.conf <<'EOF'
-              events { worker_connections 1024; }
-              http {
-                server {
-                  listen 8080;
-                  location /mailhog {
-                    rewrite ^/mailhog/?(.*)$ /$1 break;
-                    proxy_pass http://127.0.0.1:8025;
-                    proxy_http_version 1.1;
-                    proxy_set_header Host $host;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                    proxy_set_header Upgrade $http_upgrade;
-                    proxy_set_header Connection "upgrade";
-                    proxy_set_header Accept-Encoding "";
-
-                    sub_filter 'href="/' 'href="/mailhog/';
-                    sub_filter 'src="/' 'src="/mailhog/';
-                    sub_filter "'/api/" "'/mailhog/api/";
-                    sub_filter '"/api/' '"/mailhog/api/';
-                    sub_filter 'url(/' 'url(/mailhog/';
-                    sub_filter_once off;
-                    sub_filter_types *;
-                  }
-                  location / {
-                    proxy_pass http://127.0.0.1:8025;
-                    proxy_http_version 1.1;
-                    proxy_set_header Host $host;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                    proxy_set_header Upgrade $http_upgrade;
-                    proxy_set_header Connection "upgrade";
-                  }
-                }
-              }
-              EOF
-              nginx -g 'daemon off;'
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref MailhogLogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: nginx
 
   # ===== ECS Services =====
   CatalogService:
@@ -1021,7 +968,7 @@ Resources:
 
   MailhogService:
     Type: AWS::ECS::Service
-    DependsOn: MailhogListenerRule
+    DependsOn: MailhogListener
     Properties:
       ServiceName: mailhog-service
       Cluster: !Ref ECSCluster
@@ -1037,8 +984,8 @@ Resources:
           SecurityGroups:
             - !Ref ECSSecurityGroup
       LoadBalancers:
-        - ContainerName: nginx
-          ContainerPort: 8080
+        - ContainerName: mailhog
+          ContainerPort: 8025
           TargetGroupArn: !Ref MailhogTargetGroup
       ServiceRegistries:
         - RegistryArn: !GetAtt MailhogServiceDiscovery.Arn
