@@ -343,7 +343,3 @@ cinch-microservices/
 - **Nginx**: Alpine
 - **Supervisor**: (Email service process manager)
 
-## License
-
-This project is created for the Cinch coding assignment.
-
